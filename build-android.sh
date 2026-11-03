@@ -21,6 +21,7 @@ resolve_flutter() {
   fi
 
   local candidates=(
+    "/opt/flutter/bin/flutter"
     "$HOME/flutter/bin/flutter"
     "$HOME/Documents/flutter/bin/flutter"
     "$HOME/snap/flutter/common/flutter/bin/flutter"
