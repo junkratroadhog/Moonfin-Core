@@ -23,6 +23,7 @@ enum DetailButton {
   // already arranged this row.
   seerrRequest('seerrRequest'),
   seerrRequest4k('seerrRequest4k'),
+  torrentPicker('torrentPicker'),
   shuffle('shuffle'),
   restart('restart', canHide: false),
   audio('audio'),
@@ -42,8 +43,7 @@ enum DetailButton {
   seerrReportIssue('seerrReportIssue'),
   seerrManage('seerrManage'),
   keepAsComplete('keepAsComplete'),
-  admin('admin'),
-  torrentPicker('torrentPicker');
+  admin('admin');
 
   const DetailButton(this.id, {this.canHide = true});
 

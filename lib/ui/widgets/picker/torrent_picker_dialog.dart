@@ -6,20 +6,22 @@ import '../track_selector_dialog.dart';
 
 void showTorrentPickerDialog(
   BuildContext context, {
-  required int tmdbId,
+  int? tmdbId,
   required String title,
   int? year,
   String? backdrop,
+  List<TorrentRelease>? presetReleases,
 }) {
   showStyledPlayerDialog<void>(
     context,
     title: 'Pick a Torrent — $title',
     maxWidth: 720,
     builder: (_) => TorrentPickerDialog(
-      tmdbId: tmdbId,
+      tmdbId: tmdbId ?? 0,
       title: title,
       year: year,
       backdrop: backdrop,
+      presetReleases: presetReleases,
     ),
   );
 }
@@ -29,6 +31,7 @@ class TorrentPickerDialog extends StatefulWidget {
   final String title;
   final int? year;
   final String? backdrop;
+  final List<TorrentRelease>? presetReleases;
 
   const TorrentPickerDialog({
     super.key,
@@ -36,6 +39,7 @@ class TorrentPickerDialog extends StatefulWidget {
     required this.title,
     this.year,
     this.backdrop,
+    this.presetReleases,
   });
 
   @override
@@ -57,7 +61,12 @@ class _TorrentPickerDialogState extends State<TorrentPickerDialog> {
   @override
   void initState() {
     super.initState();
-    _loadReleases();
+    if (widget.presetReleases != null && widget.presetReleases!.isNotEmpty) {
+      _releases = widget.presetReleases!;
+      _isLoading = false;
+    } else {
+      _loadReleases();
+    }
     _checkGrabStatus();
     _statusTimer = Timer.periodic(const Duration(seconds: 4), (_) {
       if (mounted) _checkGrabStatus();
@@ -100,19 +109,36 @@ class _TorrentPickerDialogState extends State<TorrentPickerDialog> {
   }
 
   Future<void> _checkGrabStatus() async {
-    final status = await _service.getGrabStatus(widget.title);
-    if (mounted) {
-      setState(() {
-        _grabStatus = status;
-      });
-    }
+    if (_releases.isEmpty) return;
+    try {
+      final keys = _releases
+          .map((r) => r.guid.isNotEmpty ? r.guid : r.title)
+          .where((k) => k.isNotEmpty)
+          .toList();
+      if (keys.isEmpty) return;
+
+      final statuses = await _service.getGrabStatusKeys(keys);
+      if (!mounted) return;
+
+      for (final k in keys) {
+        final val = statuses[k];
+        if (val is Map<String, dynamic>) {
+          setState(() {
+            _grabStatus = GrabStatus.fromJson(val);
+          });
+          break;
+        }
+      }
+    } catch (_) {}
   }
 
   Future<void> _onGrab(TorrentRelease release) async {
     setState(() => _isGrabbing = true);
     final success = await _service.grabRelease(
-      guid: release.guid,
-      indexerId: release.indexerId,
+      release: release,
+      tmdbId: widget.tmdbId,
+      title: widget.title,
+      year: widget.year,
     );
     setState(() => _isGrabbing = false);
 
@@ -121,10 +147,11 @@ class _TorrentPickerDialogState extends State<TorrentPickerDialog> {
         SnackBar(
           content: Text(
             success
-                ? 'Grabbed "${release.title}" successfully!'
+                ? 'Queued download for "${release.title}"'
                 : 'Failed to trigger grab for this release.',
           ),
-          backgroundColor: success ? Colors.green.shade800 : Colors.red.shade800,
+          backgroundColor:
+              success ? const Color(0xFF1B5E20) : const Color(0xFFB71C1C),
         ),
       );
       _checkGrabStatus();
@@ -136,9 +163,10 @@ class _TorrentPickerDialogState extends State<TorrentPickerDialog> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E24),
-        title: const Text('Cancel Download?', style: TextStyle(color: Colors.white)),
+        title: const Text('Cancel Download?',
+            style: TextStyle(color: Colors.white)),
         content: const Text(
-          'Are you sure you want to stop and delete this download?',
+          'Are you sure you want to stop and remove this download?',
           style: TextStyle(color: Colors.white70),
         ),
         actions: [
@@ -147,20 +175,27 @@ class _TorrentPickerDialogState extends State<TorrentPickerDialog> {
             child: const Text('Keep', style: TextStyle(color: Colors.white54)),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade700),
+            style:
+                ElevatedButton.styleFrom(backgroundColor: Colors.red.shade700),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Delete Grab', style: TextStyle(color: Colors.white)),
+            child:
+                const Text('Remove Grab', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
     );
 
     if (confirm == true) {
-      final ok = await _service.deleteGrab(widget.title);
+      final ok = await _service.cancelGrab(
+        hash: _grabStatus?.hash,
+        key: widget.title,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(ok ? 'Download cancelled & removed.' : 'Failed to cancel grab.'),
+            content: Text(ok
+                ? 'Download cancelled & removed.'
+                : 'Failed to cancel grab.'),
           ),
         );
         setState(() => _grabStatus = null);
@@ -193,14 +228,10 @@ class _TorrentPickerDialogState extends State<TorrentPickerDialog> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Active Grab Banner (if downloading)
-          if (_grabStatus != null && _grabStatus!.isDownloading) _buildGrabStatusBar(),
-
-          // Filter bar
+          if (_grabStatus != null && _grabStatus!.isDownloading)
+            _buildGrabStatusBar(),
           _buildFilterBar(),
           const SizedBox(height: 8),
-
-          // Content body
           Expanded(child: _buildBody()),
         ],
       ),
@@ -230,17 +261,19 @@ class _TorrentPickerDialogState extends State<TorrentPickerDialog> {
                   children: [
                     Text(
                       'Downloading: ${s.progress.toStringAsFixed(1)}%',
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, color: Colors.white),
                     ),
                     Text(
                       '${s.speed} • ETA: ${s.timeleft}',
-                      style: const TextStyle(fontSize: 12, color: Colors.white70),
+                      style:
+                          const TextStyle(fontSize: 12, color: Colors.white70),
                     ),
                   ],
                 ),
                 const SizedBox(height: 6),
                 LinearProgressIndicator(
-                  value: s.progress / 100.0,
+                  value: s.progress > 0 ? (s.progress / 100.0) : null,
                   backgroundColor: Colors.white12,
                   valueColor: const AlwaysStoppedAnimation(Colors.blueAccent),
                 ),
@@ -259,15 +292,21 @@ class _TorrentPickerDialogState extends State<TorrentPickerDialog> {
   }
 
   Widget _buildFilterBar() {
+    final count4k = _releases.where((r) => r.is4K).length;
+    final count1080p = _releases.where((r) => r.is1080p).length;
+    final count720p = _releases.where((r) => r.is720p).length;
+    final countTamilmv = _releases.where((r) => r.isTamilMV).length;
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
           _filterChip('all', 'All (${_releases.length})'),
-          _filterChip('4k', '4K UHD'),
-          _filterChip('1080p', '1080p'),
-          _filterChip('720p', '720p'),
-          _filterChip('tamilmv', '1TamilMV'),
+          if (count4k > 0) _filterChip('4k', '4K UHD ($count4k)'),
+          if (count1080p > 0) _filterChip('1080p', '1080p ($count1080p)'),
+          if (count720p > 0) _filterChip('720p', '720p ($count720p)'),
+          if (countTamilmv > 0)
+            _filterChip('tamilmv', '1TamilMV ($countTamilmv)'),
         ],
       ),
     );
@@ -299,7 +338,8 @@ class _TorrentPickerDialogState extends State<TorrentPickerDialog> {
           children: [
             CircularProgressIndicator(color: Colors.blueAccent),
             SizedBox(height: 16),
-            Text('Searching torrent indexers & 1TamilMV...', style: TextStyle(color: Colors.white70)),
+            Text('Searching torrent indexers & 1TamilMV...',
+                style: TextStyle(color: Colors.white70)),
           ],
         ),
       );
@@ -314,7 +354,8 @@ class _TorrentPickerDialogState extends State<TorrentPickerDialog> {
             const SizedBox(height: 12),
             Text(_error!, style: const TextStyle(color: Colors.white70)),
             const SizedBox(height: 12),
-            ElevatedButton(onPressed: _loadReleases, child: const Text('Retry')),
+            ElevatedButton(
+                onPressed: _loadReleases, child: const Text('Retry')),
           ],
         ),
       );
@@ -337,6 +378,8 @@ class _TorrentPickerDialogState extends State<TorrentPickerDialog> {
   }
 
   Widget _buildReleaseCard(TorrentRelease r) {
+    final langs = r.languages.isNotEmpty ? r.languages.join(', ') : null;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
@@ -350,43 +393,55 @@ class _TorrentPickerDialogState extends State<TorrentPickerDialog> {
         children: [
           Text(
             r.title,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
+            style: const TextStyle(
+                fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
+          if (langs != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              langs,
+              style: TextStyle(fontSize: 12, color: Colors.orange.shade300),
+            ),
+          ],
           const SizedBox(height: 8),
           Row(
             children: [
-              // Quality badge
               if (r.quality.isNotEmpty)
                 _badge(
                   r.quality,
-                  r.is4K ? Colors.purple.shade400 : Colors.blue.shade400,
+                  r.is4K ? Colors.amber.shade400 : Colors.blue.shade400,
                 ),
-              // Indexer badge
               _badge(
                 r.indexer,
-                r.isTamilMV ? Colors.orange.shade400 : Colors.teal.shade400,
+                r.isTamilMV ? Colors.deepOrange.shade400 : Colors.teal.shade400,
               ),
-              // Size badge
               _badge(r.formattedSize, Colors.grey.shade400),
               const Spacer(),
-              // Seeders & Leechers
-              Row(
-                children: [
-                  const Icon(Icons.arrow_upward, size: 14, color: Colors.greenAccent),
-                  Text('${r.seeders}', style: const TextStyle(color: Colors.greenAccent, fontSize: 12)),
-                  const SizedBox(width: 8),
-                  const Icon(Icons.arrow_downward, size: 14, color: Colors.redAccent),
-                  Text('${r.leechers}', style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
-                ],
-              ),
+              if (r.seeders > 0 || r.leechers > 0)
+                Row(
+                  children: [
+                    const Icon(Icons.arrow_upward,
+                        size: 14, color: Colors.greenAccent),
+                    Text('${r.seeders}',
+                        style: const TextStyle(
+                            color: Colors.greenAccent, fontSize: 12)),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.arrow_downward,
+                        size: 14, color: Colors.redAccent),
+                    Text('${r.leechers}',
+                        style: const TextStyle(
+                            color: Colors.redAccent, fontSize: 12)),
+                  ],
+                ),
               const SizedBox(width: 12),
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue.shade600,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
                 icon: const Icon(Icons.download, size: 16),
                 label: const Text('Grab'),
@@ -410,9 +465,9 @@ class _TorrentPickerDialogState extends State<TorrentPickerDialog> {
       ),
       child: Text(
         text,
-        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold),
+        style:
+            TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold),
       ),
     );
   }
 }
-

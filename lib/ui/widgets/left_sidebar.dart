@@ -1135,6 +1135,22 @@ class _LeftSidebarState extends State<LeftSidebar> with RouteAware {
                       context.navigateTopLevel(Destinations.seerrDiscover);
                     },
                   ),
+                  _SidebarItem(
+                    key: const ValueKey('sidebar-regional'),
+                    baseColor: nextMainSidebarColor(),
+                    icon: Icons.language,
+                    label: 'Regional (1TamilMV)',
+                    showLabel: _showLabels,
+                    onPressed: () {
+                      _onNavigate();
+                      if (_isActive(Destinations.regionalCatalog)) {
+                        _exitSidebarToContent();
+                        return;
+                      }
+                      _markNavigationAwayFromSidebar();
+                      context.navigateTopLevel(Destinations.regionalCatalog);
+                    },
+                  ),
                 if (showLibraries && showLibrariesIndividually)
                   for (final lib in navLibraries)
                     _SidebarItem(

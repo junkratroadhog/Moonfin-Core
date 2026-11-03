@@ -55,6 +55,7 @@ enum SeerrShortcut {
   discover,
   movies,
   series,
+  regional,
   requests,
   issues;
 
@@ -74,6 +75,7 @@ enum SeerrShortcut {
     discover => l10n.discover,
     movies => l10n.movies,
     series => l10n.series,
+    regional => '1TamilMV Regional',
     requests => l10n.seerrRequestsTitle,
     issues => l10n.seerrIssuesTitle,
   };
@@ -82,6 +84,7 @@ enum SeerrShortcut {
     discover => Icons.explore,
     movies => Icons.movie,
     series => Icons.tv,
+    regional => Icons.language,
     requests => Icons.playlist_add_check,
     issues => Icons.report_problem_outlined,
   };
@@ -94,6 +97,8 @@ enum SeerrShortcut {
         _openBrowse(context, 'movie');
       case series:
         _openBrowse(context, 'tv');
+      case regional:
+        context.push(Destinations.regionalCatalog);
       case requests:
         context.push(Destinations.seerrRequests);
       case issues:

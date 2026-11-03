@@ -158,13 +158,14 @@ class Destinations {
   // Settings
   static const settings = '/settings';
 
-  // Seerr
+  // Seerr & Indexer
   static const seerrDiscover = '/seerr/discover';
   static const seerrRequests = '/seerr/requests';
   static const seerrBrowse = '/seerr/browse';
   static const seerrMediaDetail = '/seerr/media/:itemId';
   static const seerrPersonDetail = '/seerr/person/:personId';
   static const seerrCollectionDetail = '/seerr/collection/:collectionId';
+  static const regionalCatalog = '/regional';
 
   static String library(
     String libraryId, {
