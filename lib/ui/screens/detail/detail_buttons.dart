@@ -42,7 +42,8 @@ enum DetailButton {
   seerrReportIssue('seerrReportIssue'),
   seerrManage('seerrManage'),
   keepAsComplete('keepAsComplete'),
-  admin('admin');
+  admin('admin'),
+  torrentPicker('torrentPicker');
 
   const DetailButton(this.id, {this.canHide = true});
 
@@ -60,7 +61,8 @@ enum DetailButton {
     DetailButton.seerrWatchlist ||
     DetailButton.seerrReportIssue ||
     DetailButton.seerrManage ||
-    DetailButton.trailer => true,
+    DetailButton.trailer ||
+    DetailButton.torrentPicker => true,
     _ => false,
   };
 
@@ -168,6 +170,7 @@ enum DetailButton {
     DetailButton.seerrManage => Icons.rule,
     DetailButton.keepAsComplete => Icons.task_alt,
     DetailButton.admin => Icons.settings,
+    DetailButton.torrentPicker => Icons.cloud_download_outlined,
   };
 
   String label(AppLocalizations l10n) => switch (this) {
@@ -193,6 +196,7 @@ enum DetailButton {
     DetailButton.seerrManage => l10n.manageRequests,
     DetailButton.keepAsComplete => l10n.keepAsComplete,
     DetailButton.admin => l10n.admin,
+    DetailButton.torrentPicker => 'Pick Torrent',
   };
 }
 

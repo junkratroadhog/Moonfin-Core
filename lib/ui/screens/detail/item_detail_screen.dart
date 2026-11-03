@@ -8,6 +8,7 @@ import '../../widgets/anime_marker_badge.dart';
 import '../../../data/repositories/anime_marker_repository.dart';
 import '../../widgets/identify_dialog.dart';
 import '../../widgets/media_badge.dart';
+import '../../widgets/picker/torrent_picker_dialog.dart';
 import '../admin/admin_nav.dart' show adminServerSupported;
 import 'detail_admin_actions.dart';
 
@@ -7420,6 +7421,21 @@ class DetailActionButtonsState extends State<DetailActionButtons> {
           onPressed: () => _showAdminDialog(context, item),
           isActive: true,
           activeColor: const Color(0xFFD32F2F),
+        ),
+      if (shows(DetailButton.torrentPicker))
+        DetailButton.torrentPicker: _DetailActionButton(
+          label: 'Pick Torrent',
+          icon: Icons.cloud_download_outlined,
+          onPressed: () {
+            final parsedTmdb = int.tryParse(item.tmdbId ?? '') ?? seerr?.state.tmdbId ?? 0;
+            final seerrYear = DateTime.tryParse(seerr?.state.releaseDate ?? seerr?.state.firstAirDate ?? '')?.year;
+            showTorrentPickerDialog(
+              context,
+              tmdbId: parsedTmdb,
+              title: item.name.isNotEmpty ? item.name : (seerr?.state.displayTitle ?? ''),
+              year: item.productionYear ?? seerrYear,
+            );
+          },
         ),
     };
 
