@@ -304,4 +304,132 @@ class PickerService {
       return false;
     }
   }
+
+  /// Cache-first releases lookup — returns cached-or-empty instantly (never the slow live path), so the
+  /// picker opens immediately on repeat opens. Mirrors the TV app's `getReleases(tmdbId,{cacheOnly:1})`.
+  Future<PickerReleasesResponse> getReleasesCacheOnly({
+    required int tmdbId,
+    String? mediaType,
+  }) async {
+    try {
+      final res = await _dio.post(
+        '$baseUrl/releases',
+        data: {
+          'tmdbId': tmdbId,
+          'cacheOnly': 1,
+          if (mediaType != null) 'mediaType': mediaType,
+        },
+        options: Options(headers: _authHeaders),
+      );
+      if (res.statusCode == 200 && res.data is Map<String, dynamic>) {
+        return PickerReleasesResponse.fromJson(res.data as Map<String, dynamic>);
+      }
+    } catch (e) {
+      debugPrint('[PickerService] cacheOnly releases failed: $e');
+    }
+    return PickerReleasesResponse(
+        movieId: tmdbId, title: '', year: 0, releases: const []);
+  }
+
+  /// Progressive per-indexer NDJSON stream. Unlike [searchReleasesStream] (which awaits the whole
+  /// stream and returns one flat list), this fires [onStart]/[onIndexer]/[onError] as the backend
+  /// flushes each indexer — so the picker can show a live "done/total indexers" count and append rows
+  /// as they arrive, exactly like the TV app's `streamReleases(tmdbId, onEvent)`. Pass a [cancelToken]
+  /// to abort the in-flight fetch when the popup closes or a Refresh supersedes it.
+  Future<void> streamReleasesEvents({
+    int? tmdbId,
+    required String title,
+    int? year,
+    String? mediaType,
+    void Function(int total)? onStart,
+    void Function(int done, int total, List<TorrentRelease> releases)? onIndexer,
+    void Function(String error)? onError,
+    CancelToken? cancelToken,
+  }) async {
+    final res = await _dio.post<ResponseBody>(
+      '$baseUrl/releases/stream',
+      data: {
+        if (tmdbId != null && tmdbId > 0) 'tmdbId': tmdbId,
+        'title': title,
+        if (year != null && year > 0) 'year': year,
+        'mediaType': mediaType ?? 'movie',
+      },
+      options: Options(
+        headers: _authHeaders,
+        responseType: ResponseType.stream,
+      ),
+      cancelToken: cancelToken,
+    );
+
+    final stream = res.data?.stream;
+    if (stream == null) return;
+    final lines = utf8.decoder.bind(stream).transform(const LineSplitter());
+    await for (final line in lines) {
+      final trimmed = line.trim();
+      if (trimmed.isEmpty) continue;
+      Map<String, dynamic> json;
+      try {
+        json = jsonDecode(trimmed) as Map<String, dynamic>;
+      } catch (_) {
+        continue;
+      }
+      switch (json['type']) {
+        case 'start':
+          onStart?.call((json['total'] as num?)?.toInt() ?? 0);
+          break;
+        case 'indexer':
+          final raw = json['releases'] as List<dynamic>? ?? const [];
+          final rels = <TorrentRelease>[];
+          for (final r in raw) {
+            if (r is Map<String, dynamic>) rels.add(TorrentRelease.fromJson(r));
+          }
+          onIndexer?.call(
+            (json['done'] as num?)?.toInt() ?? 0,
+            (json['total'] as num?)?.toInt() ?? 0,
+            rels,
+          );
+          break;
+        case 'error':
+          onError?.call(json['error'] as String? ?? 'Search failed');
+          break;
+      }
+    }
+  }
+
+  /// Grabs a release and returns the created torrent hash (or null) so the picker row can go straight
+  /// to its Cancel+progress state before the first status poll lands. Throws on a non-2xx so the caller
+  /// can show the row's failed/Retry state. Mirrors the TV app's `grab(rel) → {hash}`.
+  Future<String?> grabReleaseResult({
+    required TorrentRelease release,
+    int? tmdbId,
+    String? title,
+    int? year,
+    String? mediaType,
+  }) async {
+    final data = <String, dynamic>{
+      'guid': release.guid,
+      'indexerId': release.indexerId,
+      'indexer': release.indexer,
+      'protocol': release.protocol ?? 'torrent',
+      'mediaType': mediaType ?? 'movie',
+      if (release.downloadUrl != null && release.downloadUrl!.isNotEmpty)
+        'downloadUrl': release.downloadUrl,
+      if (release.magnet != null && release.magnet!.isNotEmpty)
+        'downloadUrl': release.magnet,
+      if (tmdbId != null && tmdbId > 0) 'tmdbId': tmdbId,
+      'title': title ?? release.title,
+      if (year != null && year > 0) 'year': year,
+    };
+    final res = await _dio.post(
+      '$baseUrl/grab',
+      data: data,
+      options: Options(headers: _authHeaders),
+    );
+    if (res.statusCode == 200 || res.statusCode == 201) {
+      final d = res.data;
+      if (d is Map<String, dynamic>) return d['hash'] as String?;
+      return null;
+    }
+    throw Exception('Grab failed (${res.statusCode})');
+  }
 }
