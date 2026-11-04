@@ -1151,6 +1151,22 @@ class _LeftSidebarState extends State<LeftSidebar> with RouteAware {
                       context.navigateTopLevel(Destinations.regionalCatalog);
                     },
                   ),
+                  _SidebarItem(
+                    key: const ValueKey('sidebar-qbit-downloads'),
+                    baseColor: nextMainSidebarColor(),
+                    icon: Icons.download_outlined,
+                    label: 'Downloads',
+                    showLabel: _showLabels,
+                    onPressed: () {
+                      _onNavigate();
+                      if (_isActive(Destinations.qbitDownloads)) {
+                        _exitSidebarToContent();
+                        return;
+                      }
+                      _markNavigationAwayFromSidebar();
+                      context.navigateTopLevel(Destinations.qbitDownloads);
+                    },
+                  ),
                 if (showLibraries && showLibrariesIndividually)
                   for (final lib in navLibraries)
                     _SidebarItem(

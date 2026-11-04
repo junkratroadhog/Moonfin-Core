@@ -57,6 +57,7 @@ import '../screens/seerr/seerr_discover_screen.dart';
 import '../screens/seerr/seerr_person_screen.dart';
 import '../screens/seerr/seerr_requests_screen.dart';
 import '../screens/regional/regional_catalog_screen.dart';
+import '../screens/admin/downloads/qbit_downloads_screen.dart';
 import '../screens/livetv/live_tv_channel_player_loader.dart';
 import '../screens/livetv/live_tv_guide_screen.dart';
 import '../screens/livetv/live_tv_player_screen.dart';
@@ -119,6 +120,7 @@ bool _isOfflineBlocked(String path) {
   return path.startsWith('/live-tv') ||
       path.startsWith('/seerr') ||
       path.startsWith('/regional') ||
+      path.startsWith('/downloads-admin') ||
       path.startsWith('/admin') ||
       path.startsWith('/games');
 }
@@ -726,6 +728,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: Destinations.regionalCatalog,
       builder: (context, state) => const RegionalCatalogScreen(),
+    ),
+    GoRoute(
+      path: Destinations.qbitDownloads,
+      builder: (context, state) => const QbitDownloadsScreen(),
     ),
     GoRoute(
       path: Destinations.seerrDiscover,

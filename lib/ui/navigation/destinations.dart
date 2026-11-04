@@ -166,6 +166,7 @@ class Destinations {
   static const seerrPersonDetail = '/seerr/person/:personId';
   static const seerrCollectionDetail = '/seerr/collection/:collectionId';
   static const regionalCatalog = '/regional';
+  static const qbitDownloads = '/downloads-admin';
 
   static String library(
     String libraryId, {
