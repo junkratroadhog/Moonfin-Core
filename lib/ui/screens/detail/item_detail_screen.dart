@@ -7422,10 +7422,10 @@ class DetailActionButtonsState extends State<DetailActionButtons> {
           isActive: true,
           activeColor: const Color(0xFFD32F2F),
         ),
-      if (shows(DetailButton.torrentPicker))
+      if (shows(DetailButton.torrentPicker) && (seerr?.canDownload ?? false))
         DetailButton.torrentPicker: _DetailActionButton(
-          label: 'Pick Torrent',
-          icon: Icons.cloud_download_outlined,
+          label: l10n.download,
+          icon: Icons.download,
           onPressed: () {
             final parsedTmdb = int.tryParse(item.tmdbId ?? '') ?? seerr?.state.tmdbId ?? 0;
             final seerrYear = DateTime.tryParse(seerr?.state.releaseDate ?? seerr?.state.firstAirDate ?? '')?.year;

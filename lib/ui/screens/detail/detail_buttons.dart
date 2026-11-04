@@ -170,7 +170,7 @@ enum DetailButton {
     DetailButton.seerrManage => Icons.rule,
     DetailButton.keepAsComplete => Icons.task_alt,
     DetailButton.admin => Icons.settings,
-    DetailButton.torrentPicker => Icons.cloud_download_outlined,
+    DetailButton.torrentPicker => Icons.download,
   };
 
   String label(AppLocalizations l10n) => switch (this) {
@@ -196,7 +196,7 @@ enum DetailButton {
     DetailButton.seerrManage => l10n.manageRequests,
     DetailButton.keepAsComplete => l10n.keepAsComplete,
     DetailButton.admin => l10n.admin,
-    DetailButton.torrentPicker => 'Pick Torrent',
+    DetailButton.torrentPicker => l10n.download,
   };
 }
 

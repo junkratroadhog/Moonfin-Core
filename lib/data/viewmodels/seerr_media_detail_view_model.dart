@@ -882,6 +882,17 @@ class SeerrMediaDetailViewModel extends ChangeNotifier {
         user.hasPermission(SeerrPermission.requestTv);
   }
 
+  /// Downloader role for the torrent picker, mirroring the TV app's
+  /// `canDownload = AUTO_APPROVE || MANAGE_REQUESTS` (admin auto-passes via
+  /// hasPermission). Admin + subscriber get the Download button; guests keep
+  /// the native Request button.
+  bool get canDownload {
+    final user = _state.currentUser;
+    if (user == null) return false;
+    return user.hasPermission(SeerrPermission.autoApprove) ||
+        user.hasPermission(SeerrPermission.manageRequests);
+  }
+
   bool get canRequest4k {
     final user = _state.currentUser;
     if (user == null) return false;
