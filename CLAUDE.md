@@ -21,7 +21,10 @@ platform-specific vs shared.
 
 ## Porting context
 This app is receiving a feature port from the Enact/React TV app (`moonfin-smart-tv`), which is the
-**UI/UX source of truth** — recreate its screens exactly, do not invent new UX. The shared backend
+**UI/UX source of truth** — recreate its screens exactly, do not invent new UX.
+**Provisional:** the TV app stays the truth until the maintainer confirms each reworked Flutter screen is
+good; only then does this Flutter build become the reference. Do not treat `main` as the truth before
+that sign-off — when a screen differs, the TV app wins. The shared backend
 (scraper/picker API on `:5056/picker/api`, `:9898`) is reused unchanged; clients only call it. See the
 parent `MOONFIN_PORT_SPEC.md` for the feature map and current parity status.
 
