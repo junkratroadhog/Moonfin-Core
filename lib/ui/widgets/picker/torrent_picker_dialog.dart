@@ -199,7 +199,12 @@ class _TorrentPickerDialogState extends State<TorrentPickerDialog> {
       _pollStatus();
       return;
     }
-    if (widget.tmdbId <= 0) return;
+    // No tmdbId (e.g. a Seerr title whose id didn't resolve) → don't show an empty list; go straight to
+    // a title-based indexer search so clicking Download always kicks off a live search.
+    if (widget.tmdbId <= 0) {
+      if (widget.title.isNotEmpty) _startSearch();
+      return;
+    }
     setState(() {
       _dl = {};
       _dlLoaded = false;
