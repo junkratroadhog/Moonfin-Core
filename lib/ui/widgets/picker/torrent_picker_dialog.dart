@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../data/services/picker/picker_models.dart';
 import '../../../data/services/picker/picker_service.dart';
+import '../expandable_icon_button.dart';
 
 // "Pick a Torrent" — a faithful Flutter port of the TV app's SelectTorrentPopup
 // (tv-client/packages/app/src/components/seerr/SelectTorrentPopup.js + .module.less).
@@ -512,14 +513,14 @@ class _TorrentPickerDialogState extends State<TorrentPickerDialog> {
                   fontFeatures: const [FontFeature.tabularFigures()])),
         ],
         const SizedBox(width: 10),
-        _circleBtn(
-          cs,
-          size: 39,
-          onTap: _searching ? null : _startSearch,
-          child: _searching
-              ? _Spinner(color: ink, size: 20)
-              : Icon(Icons.autorenew, size: 20, color: ink),
-          tooltip: 'Refresh',
+        // Circular icon that expands into a labeled pill on hover/focus (the TV ActionButton).
+        ExpandableIconButton(
+          iconBuilder:
+              _searching ? (size, color) => _Spinner(color: color, size: size) : null,
+          icon: _searching ? null : Icons.autorenew,
+          label: 'Refresh',
+          baseColor: cs.primary,
+          onPressed: _searching ? () {} : _startSearch,
         ),
         const SizedBox(width: 8),
         _circleBtn(
@@ -798,7 +799,7 @@ class _TorrentRow extends StatelessWidget {
                     color: ink.withValues(alpha: 0.78))),
           ),
           const SizedBox(width: 14),
-          SizedBox(width: 160, child: Align(alignment: Alignment.centerRight, child: _action(context))),
+          SizedBox(width: 212, child: Align(alignment: Alignment.centerRight, child: _action(context))),
         ],
       ),
     );
@@ -894,26 +895,28 @@ class _TorrentRow extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (canPlay) ...[
-            _circle(context, Icons.play_arrow, onPlay, 'Play'),
+            ExpandableIconButton(
+                icon: Icons.play_arrow, label: 'Play', baseColor: cs.primary, onPressed: onPlay),
             const SizedBox(width: 8),
           ],
-          _circle(context, Icons.delete_outline, onDelete, 'Delete'),
+          ExpandableIconButton(
+              icon: Icons.delete_outline,
+              label: 'Delete',
+              baseColor: cs.primary,
+              onPressed: onDelete),
         ],
       );
     }
     if (status == 'sending') {
       return _circleChild(context, _Spinner(color: ink, size: 24), null, 'Working');
     }
-    return _circle(
-      context,
-      Icons.download,
-      onGrab,
-      status == 'failed' ? 'Retry' : 'Download',
+    return ExpandableIconButton(
+      icon: Icons.download,
+      label: status == 'failed' ? 'Retry' : 'Download',
+      baseColor: cs.primary,
+      onPressed: onGrab,
     );
   }
-
-  Widget _circle(BuildContext ctx, IconData icon, VoidCallback onTap, String tip) =>
-      _circleChild(ctx, Icon(icon, size: 24, color: cs.onSurface), onTap, tip);
 
   Widget _circleChild(BuildContext ctx, Widget child, VoidCallback? onTap, String tip) {
     final ink = cs.onSurface;

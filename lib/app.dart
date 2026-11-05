@@ -823,6 +823,9 @@ class _GlobalShortcutScopeState extends State<_GlobalShortcutScope>
         }
         scheduleRoutePop(appRouter, isMounted: () => mounted);
       } else if (!_exitDialogShowing) {
+        // A browser tab has no app to quit — Escape/back at the root must not pop up the
+        // exit-confirmation dialog (that's a TV/desktop-app affordance, not a web one).
+        if (kIsWeb) return true;
         // A server remote only navigates, it can't quit the app it's driving.
         if (fromRemote) return true;
         if (PlatformDetection.isAndroid && key == LogicalKeyboardKey.goBack) {
