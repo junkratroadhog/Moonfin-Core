@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/services/picker/picker_models.dart';
 import '../../../data/services/picker/picker_service.dart';
 import '../action_pill_button.dart';
+import '../detail_glyph.dart';
 
 // "Pick a Torrent" — a faithful Flutter port of the TV app's SelectTorrentPopup
 // (tv-client/packages/app/src/components/seerr/SelectTorrentPopup.js + .module.less).
@@ -521,9 +522,14 @@ class _TorrentPickerDialogState extends State<TorrentPickerDialog> {
         // Circular icon that expands into a labeled pill on hover/focus (the TV ActionButton).
         ActionPillButton(
           height: 40,
-          iconBuilder:
-              _searching ? (size, color) => _Spinner(color: color, size: size) : null,
-          icon: _searching ? null : Icons.autorenew,
+          iconBuilder: _searching
+              ? (size, color) => _Spinner(
+                  color: color,
+                  size: size,
+                  path: PickerChromeIconPaths.refresh,
+                  viewBox: PickerChromeIconPaths.viewBox)
+              : (size, color) => DetailGlyph(PickerChromeIconPaths.refresh,
+                  size: size, color: color, viewBox: PickerChromeIconPaths.viewBox),
           label: 'Refresh',
           onPressed: _searching ? () {} : _startSearch,
         ),
@@ -532,7 +538,10 @@ class _TorrentPickerDialogState extends State<TorrentPickerDialog> {
           cs,
           size: 39,
           onTap: () => Navigator.of(context).maybePop(),
-          child: Icon(Icons.close, size: 20, color: ink.withValues(alpha: 0.8)),
+          child: DetailGlyph(PickerChromeIconPaths.close,
+              size: 20,
+              color: ink.withValues(alpha: 0.8),
+              viewBox: PickerChromeIconPaths.viewBox),
           tooltip: 'Close',
         ),
       ],
@@ -549,7 +558,10 @@ class _TorrentPickerDialogState extends State<TorrentPickerDialog> {
       ),
       child: Row(
         children: [
-          Icon(Icons.search, size: 20, color: ink.withValues(alpha: 0.6)),
+          DetailGlyph(PickerChromeIconPaths.search,
+              size: 20,
+              color: ink.withValues(alpha: 0.6),
+              viewBox: PickerChromeIconPaths.viewBox),
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
@@ -591,7 +603,7 @@ class _TorrentPickerDialogState extends State<TorrentPickerDialog> {
             null,
             active: false,
             onTap: _toggleDir,
-            icon: _dir == 'desc' ? Icons.arrow_downward : Icons.arrow_upward),
+            iconPath: _dir == 'desc' ? PickerChromeIconPaths.down : PickerChromeIconPaths.up),
         const SizedBox(width: 16),
         label('Quality'),
         for (final q in _qualities)
@@ -608,7 +620,11 @@ class _TorrentPickerDialogState extends State<TorrentPickerDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _Spinner(color: cs.primary, size: 40),
+            _Spinner(
+                color: cs.primary,
+                size: 40,
+                path: PickerChromeIconPaths.refresh,
+                viewBox: PickerChromeIconPaths.viewBox),
             const SizedBox(height: 16),
             Row(
               mainAxisSize: MainAxisSize.min,
@@ -691,7 +707,7 @@ class _TorrentPickerDialogState extends State<TorrentPickerDialog> {
   }
 
   Widget _chip(ColorScheme cs, String? text,
-      {required bool active, required VoidCallback onTap, IconData? icon}) {
+      {required bool active, required VoidCallback onTap, String? iconPath}) {
     final ink = cs.onSurface;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
@@ -706,8 +722,11 @@ class _TorrentPickerDialogState extends State<TorrentPickerDialog> {
           focusColor: cs.primary.withValues(alpha: 0.24),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-            child: icon != null
-                ? Icon(icon, size: 15, color: active ? Colors.white : ink.withValues(alpha: 0.9))
+            child: iconPath != null
+                ? DetailGlyph(iconPath,
+                    size: 15,
+                    color: active ? Colors.white : ink.withValues(alpha: 0.9),
+                    viewBox: PickerChromeIconPaths.viewBox)
                 : Text(text ?? '',
                     style: TextStyle(
                         fontSize: 13,
@@ -831,7 +850,10 @@ class _TorrentRow extends StatelessWidget {
         const SizedBox(width: 8),
         _mchip('${rel.seeders} seeds', const Color(0xFF34C759).withValues(alpha: 0.18),
             const Color(0xFF5FD97E),
-            leading: const Icon(Icons.arrow_drop_up, size: 13, color: Color(0xFF5FD97E))),
+            leading: const DetailGlyph(PickerChromeIconPaths.seed,
+                size: 13,
+                color: Color(0xFF5FD97E),
+                viewBox: PickerChromeIconPaths.viewBox)),
         if (completed) ...[
           const SizedBox(width: 8),
           _mchip('In Library', const Color(0xFF34C759).withValues(alpha: 0.18),
@@ -888,7 +910,7 @@ class _TorrentRow extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.close, size: 18, color: Colors.white),
+            const DetailGlyph(DetailIconPaths.cancelRequest, size: 18, color: Colors.white),
             const SizedBox(width: 7),
             Text('Cancel · $pct%',
                 style: const TextStyle(
@@ -902,10 +924,18 @@ class _TorrentRow extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (canPlay) ...[
-            ActionPillButton(icon: Icons.play_arrow, label: 'Play', onPressed: onPlay),
+            ActionPillButton(
+              iconBuilder: (s, c) => DetailGlyph(DetailIconPaths.play, size: s, color: c),
+              label: 'Play',
+              onPressed: onPlay,
+            ),
             const SizedBox(width: 8),
           ],
-          ActionPillButton(icon: Icons.delete_outline, label: 'Delete', onPressed: onDelete),
+          ActionPillButton(
+            iconBuilder: (s, c) => DetailGlyph(DetailIconPaths.delete, size: s, color: c),
+            label: 'Delete',
+            onPressed: onDelete,
+          ),
         ],
       );
     }
@@ -913,7 +943,7 @@ class _TorrentRow extends StatelessWidget {
       return _circleChild(context, _Spinner(color: ink, size: 24), null, 'Working');
     }
     return ActionPillButton(
-      icon: Icons.download,
+      iconBuilder: (s, c) => DetailGlyph(DetailIconPaths.download, size: s, color: c),
       label: status == 'failed' ? 'Retry' : 'Download',
       onPressed: onGrab,
     );
@@ -962,7 +992,16 @@ class _TorrentRow extends StatelessWidget {
 class _Spinner extends StatefulWidget {
   final Color color;
   final double size;
-  const _Spinner({required this.color, required this.size});
+  // The glyph that spins. Defaults to the TV `restart` icon (row "sending" state); the
+  // header Refresh + "Fetching data" overlay pass the TV `refresh` two-arrows glyph,
+  // matching the TV's `css.spinning` on each respective icon.
+  final String path;
+  final String? viewBox;
+  const _Spinner(
+      {required this.color,
+      required this.size,
+      this.path = DetailIconPaths.restart,
+      this.viewBox});
 
   @override
   State<_Spinner> createState() => _SpinnerState();
@@ -981,7 +1020,8 @@ class _SpinnerState extends State<_Spinner> with SingleTickerProviderStateMixin 
   @override
   Widget build(BuildContext context) => RotationTransition(
         turns: _c,
-        child: Icon(Icons.autorenew, size: widget.size, color: widget.color),
+        child: DetailGlyph(widget.path,
+            size: widget.size, color: widget.color, viewBox: widget.viewBox),
       );
 }
 
