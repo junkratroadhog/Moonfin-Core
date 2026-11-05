@@ -80,6 +80,7 @@ class DownloadsService {
             ));
 
   String get _baseUrl {
+    if (kIsWeb) return '${Uri.base.origin}/picker/api';
     if (GetIt.instance.isRegistered<MediaServerClient>()) {
       final client = GetIt.instance<MediaServerClient>();
       if (client.baseUrl.isNotEmpty) {

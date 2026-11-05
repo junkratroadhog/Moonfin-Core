@@ -18,8 +18,12 @@ class PickerService {
               validateStatus: (_) => true,
             ));
 
-  /// Base URL of the scraper proxy (defaulting to host of media server on port 5056)
+  /// Base URL of the scraper proxy. On web we go SAME-ORIGIN (`/picker/api` on the page's own origin) so
+  /// the coreweb nginx proxies to the scraper — no cross-origin host to guess, no CORS, and cached
+  /// posters load like any same-origin image. Native derives `<server-host>:5056` exactly like the TV
+  /// app (getMoonfinConnection → `<protocol>//<host>:5056/picker/api`).
   String get baseUrl {
+    if (kIsWeb) return '${Uri.base.origin}/picker/api';
     if (GetIt.instance.isRegistered<MediaServerClient>()) {
       final client = GetIt.instance<MediaServerClient>();
       if (client.baseUrl.isNotEmpty) {
