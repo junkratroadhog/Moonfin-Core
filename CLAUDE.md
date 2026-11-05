@@ -28,6 +28,16 @@ that sign-off — when a screen differs, the TV app wins. The shared backend
 (scraper/picker API on `:5056/picker/api`, `:9898`) is reused unchanged; clients only call it. See the
 parent `MOONFIN_PORT_SPEC.md` for the feature map and current parity status.
 
+## UI conventions (do not miss these)
+- **Action buttons** (the circular icon that expands into a labeled pill on hover/focus — Play, Delete,
+  Download, Refresh, Sync, etc.) MUST use **`lib/ui/widgets/action_pill_button.dart`** (`ActionPillButton`).
+  It mirrors the detail screen's secondary action button exactly: `AnimatedContainer` 200ms `Curves.ease`
+  (== the TV's `transition: 0.2s ease`) and the app's own `AppColorScheme` tokens (`buttonFocused` /
+  `white@0.06` fill, `onButtonFocused`/`onButtonNormal` icon, `focusColor`/`onSurface@0.35` border).
+  - Do **NOT** use `ExpandableIconButton` for these (that's the nav/toolbar button; it felt choppy here),
+    and do **NOT** invent button colours (no `colorScheme.primary` fills). Reuse the tokens above.
+- **Colours**: use `AppColorScheme` tokens / `Theme.of(context).colorScheme`; never hardcode bespoke colours.
+
 ## Build targets (all from this one repo)
 - `flutter build apk`  → Android   (edit Android-only config on the `android` branch)
 - `flutter build web`  → Web        (`web` branch)   → webOS `.ipk` packaging on `webos`

@@ -71,8 +71,10 @@ class _ActionPillButtonState extends State<ActionPillButton> {
         child: GestureDetector(
           onTap: widget.onPressed,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            curve: Curves.easeOut,
+            // Matches the TV app's `transition: 0.2s ease` (Flutter Curves.ease == CSS ease) so the
+            // expand/collapse feels as smooth as the TV action buttons.
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.ease,
             height: height,
             constraints: BoxConstraints(minWidth: height, maxWidth: maxWidth),
             padding: EdgeInsets.only(left: isExpanded ? 6 : 0, right: isExpanded ? 16 : 0),
