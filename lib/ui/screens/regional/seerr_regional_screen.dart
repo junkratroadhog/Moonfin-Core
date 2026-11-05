@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../data/services/picker/picker_models.dart';
 import '../../../data/services/picker/picker_service.dart';
 import '../../navigation/destinations.dart';
-import '../../widgets/expandable_icon_button.dart';
+import '../../widgets/action_pill_button.dart';
 
 // Flutter port of the TV app's views/SeerrRegional — the "Regional" Seerr section. Lists the available
 // indexer catalogs as tiles (1TamilMV), each with Refresh / Soft Sync / Hard Sync buttons plus a header
@@ -130,10 +130,9 @@ class _SeerrRegionalScreenState extends State<SeerrRegionalScreen> {
                       ],
                     ),
                   ),
-                  ExpandableIconButton(
+                  ActionPillButton(
                     icon: Icons.refresh,
                     label: anyRunning ? 'Refreshing…' : 'Refresh All',
-                    baseColor: cs.primary,
                     onPressed: _refreshAll,
                   ),
                 ],
@@ -210,24 +209,21 @@ class _SeerrRegionalScreenState extends State<SeerrRegionalScreen> {
             children: [
               // Circular icon buttons that expand into a labeled pill on hover/focus — the TV app's
               // ActionButton, reusing the app's native ExpandableIconButton (same as the toolbar/sidebar).
-              ExpandableIconButton(
+              ActionPillButton(
                 icon: Icons.autorenew,
                 label: ix.running ? 'Refreshing…' : 'Refresh',
-                baseColor: cs.primary,
                 onPressed: _refreshTile,
               ),
               const SizedBox(width: 8),
-              ExpandableIconButton(
+              ActionPillButton(
                 icon: Icons.sync,
                 label: 'Soft Sync',
-                baseColor: cs.primary,
                 onPressed: () => _softSync(ix.id),
               ),
               const SizedBox(width: 8),
-              ExpandableIconButton(
+              ActionPillButton(
                 icon: Icons.cloud_sync_outlined,
                 label: 'Hard Sync',
-                baseColor: cs.primary,
                 onPressed: () => _hardSync(ix.id),
               ),
             ],

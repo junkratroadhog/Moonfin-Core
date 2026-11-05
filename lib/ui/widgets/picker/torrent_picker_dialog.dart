@@ -7,7 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../data/services/picker/picker_models.dart';
 import '../../../data/services/picker/picker_service.dart';
-import '../expandable_icon_button.dart';
+import '../action_pill_button.dart';
 
 // "Pick a Torrent" — a faithful Flutter port of the TV app's SelectTorrentPopup
 // (tv-client/packages/app/src/components/seerr/SelectTorrentPopup.js + .module.less).
@@ -514,12 +514,12 @@ class _TorrentPickerDialogState extends State<TorrentPickerDialog> {
         ],
         const SizedBox(width: 10),
         // Circular icon that expands into a labeled pill on hover/focus (the TV ActionButton).
-        ExpandableIconButton(
+        ActionPillButton(
+          height: 40,
           iconBuilder:
               _searching ? (size, color) => _Spinner(color: color, size: size) : null,
           icon: _searching ? null : Icons.autorenew,
           label: 'Refresh',
-          baseColor: cs.primary,
           onPressed: _searching ? () {} : _startSearch,
         ),
         const SizedBox(width: 8),
@@ -895,25 +895,19 @@ class _TorrentRow extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (canPlay) ...[
-            ExpandableIconButton(
-                icon: Icons.play_arrow, label: 'Play', baseColor: cs.primary, onPressed: onPlay),
+            ActionPillButton(icon: Icons.play_arrow, label: 'Play', onPressed: onPlay),
             const SizedBox(width: 8),
           ],
-          ExpandableIconButton(
-              icon: Icons.delete_outline,
-              label: 'Delete',
-              baseColor: cs.primary,
-              onPressed: onDelete),
+          ActionPillButton(icon: Icons.delete_outline, label: 'Delete', onPressed: onDelete),
         ],
       );
     }
     if (status == 'sending') {
       return _circleChild(context, _Spinner(color: ink, size: 24), null, 'Working');
     }
-    return ExpandableIconButton(
+    return ActionPillButton(
       icon: Icons.download,
       label: status == 'failed' ? 'Retry' : 'Download',
-      baseColor: cs.primary,
       onPressed: onGrab,
     );
   }
