@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:server_core/server_core.dart';
 import 'picker_models.dart';
+import 'picker_stream_transport.dart';
 
 class PickerService {
   final Dio _dio;
@@ -364,22 +365,20 @@ class PickerService {
     void Function(String error)? onError,
     CancelToken? cancelToken,
   }) async {
-    final res = await _dio.post<ResponseBody>(
+    // Use the conditional transport: native streams via Dio, web via fetch+getReader — so the NDJSON
+    // lines (and the live per-indexer progress they carry) arrive incrementally on BOTH platforms.
+    final stream = await openPickerStream(
+      _dio,
       '$baseUrl/releases/stream',
-      data: {
+      headers: _authHeaders.map((k, v) => MapEntry(k, v.toString())),
+      jsonBody: {
         if (tmdbId != null && tmdbId > 0) 'tmdbId': tmdbId,
         'title': title,
         if (year != null && year > 0) 'year': year,
         'mediaType': mediaType ?? 'movie',
       },
-      options: Options(
-        headers: _authHeaders,
-        responseType: ResponseType.stream,
-      ),
-      cancelToken: cancelToken,
+      cancelToken: cancelToken ?? CancelToken(),
     );
-
-    final stream = res.data?.stream;
     if (stream == null) return;
     final lines = utf8.decoder.bind(stream).transform(const LineSplitter());
     await for (final line in lines) {
