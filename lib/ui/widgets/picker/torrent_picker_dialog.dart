@@ -798,8 +798,10 @@ class _TorrentRow extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                     color: ink.withValues(alpha: 0.78))),
           ),
-          const SizedBox(width: 14),
-          SizedBox(width: 212, child: Align(alignment: Alignment.centerRight, child: _action(context))),
+          // Half the previous gap; the action is content-sized (not a fixed cell) so when it expands on
+          // hover the title (Expanded) gives way and the size slides left — the button never overlaps it.
+          const SizedBox(width: 7),
+          _action(context),
         ],
       ),
     );
