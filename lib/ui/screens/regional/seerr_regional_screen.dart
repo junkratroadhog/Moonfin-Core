@@ -5,8 +5,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../data/services/picker/picker_models.dart';
 import '../../../data/services/picker/picker_service.dart';
+import '../../../util/platform_detection.dart';
 import '../../navigation/destinations.dart';
 import '../../widgets/action_pill_button.dart';
+import '../../widgets/navigation_layout.dart';
 
 // Flutter port of the TV app's views/SeerrRegional — the "Regional" Seerr section. Lists the available
 // indexer catalogs as tiles (1TamilMV), each with Refresh / Soft Sync / Hard Sync buttons plus a header
@@ -94,14 +96,19 @@ class _SeerrRegionalScreenState extends State<SeerrRegionalScreen> {
     final ink = cs.onSurface;
     final anyRunning = _indexers.any((i) => i.running);
 
+    final leftInset = PlatformDetection.useMobileUi ? 0.0 : 72.0;
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 16, 4),
+      body: NavigationLayout(
+        showBackButton: false,
+        child: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(left: leftInset),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 8, 16, 4),
               child: Row(
                 children: [
                   IconButton(
@@ -138,8 +145,10 @@ class _SeerrRegionalScreenState extends State<SeerrRegionalScreen> {
                 ],
               ),
             ),
-            Expanded(child: _body(cs)),
-          ],
+                Expanded(child: _body(cs)),
+              ],
+            ),
+          ),
         ),
       ),
     );

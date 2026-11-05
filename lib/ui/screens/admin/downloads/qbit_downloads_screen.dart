@@ -4,6 +4,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../../../data/services/picker/downloads_service.dart';
+import '../../../../util/platform_detection.dart';
+import '../../../widgets/navigation_layout.dart';
 
 // Admin qBittorrent Downloads manager — Flutter port of the TV app's views/Downloads/Downloads.js.
 // Stats grid + filter chips + on-completion policy + speed-mode toggle, and a list GROUPED by title
@@ -184,11 +186,16 @@ class _QbitDownloadsScreenState extends State<QbitDownloadsScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF0C0D12),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1100),
-            child: CustomScrollView(
+      body: NavigationLayout(
+        showBackButton: false,
+        child: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(
+                left: PlatformDetection.useMobileUi ? 0.0 : 72.0),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1100),
+                child: CustomScrollView(
               slivers: [
                 SliverToBoxAdapter(child: _headerAndStats(cs)),
                 if (_error != null)
@@ -217,6 +224,8 @@ class _QbitDownloadsScreenState extends State<QbitDownloadsScreen> {
                   ),
                 ),
               ],
+                ),
+              ),
             ),
           ),
         ),

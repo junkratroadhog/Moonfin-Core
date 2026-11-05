@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 
 import '../../../data/services/picker/picker_models.dart';
 import '../../../data/services/picker/picker_service.dart';
+import '../../../util/platform_detection.dart';
+import '../../widgets/navigation_layout.dart';
 import '../../widgets/picker/torrent_picker_dialog.dart';
 
 // Flutter port of the TV SeerrIndexerCatalog (tv-client views/SeerrIndexerCatalog). A library-styled
@@ -129,23 +131,31 @@ class _RegionalCatalogScreenState extends State<RegionalCatalogScreen> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    // Clear the always-present left sidebar rail (collapsed width); mobile UI puts nav elsewhere.
+    final leftInset = PlatformDetection.useMobileUi ? 0.0 : 72.0;
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Stack(
-        children: [
-          _backdrop(cs),
-          SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _header(cs),
-                _searchBox(cs),
-                const SizedBox(height: 8),
-                Expanded(child: _body(cs)),
-              ],
+      body: NavigationLayout(
+        showBackButton: false,
+        child: Stack(
+          children: [
+            _backdrop(cs),
+            SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(left: leftInset),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _header(cs),
+                    _searchBox(cs),
+                    const SizedBox(height: 8),
+                    Expanded(child: _body(cs)),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
