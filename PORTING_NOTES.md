@@ -78,3 +78,31 @@ don't invent. See also `MOONFIN_PORT_SPEC.md` (feature map) and `CLAUDE.md` (bra
   nginx (`:8100`) serves `webroot` live (no restart). `coreweb` also proxies `/picker/` → scraper.
 - APK / Windows `.exe`: NOT buildable on the Linux box here (no Android SDK; Windows needs a Windows
   host/CI). Use a toolchained machine or CI in `moonfin-builds`.
+
+## Change log — every fine-tune this session (newest first, with commits)
+
+The gotchas above are the distilled rules; this is the full trail so nothing's lost.
+
+- `c13649a` picker: stream the indexer search incrementally **on web** (fetch+getReader); live `N/total`.
+- `6889573` picker: auto-search indexers by **title** when no tmdbId (Download never shows empty).
+- `14df0e7` nav: wrap 1TamilMV / Regional / Downloads screens in `NavigationLayout` (left sidebar stays).
+- `e0751c4` buttons: smoother animation **200ms `Curves.ease`** (== TV); standardized `ActionPillButton`
+  (also in `CLAUDE.md` UI rules + memory).
+- `e5b6dee` picker: size↔action gap **7px** + content-sized action so an expanding button never overlaps.
+- `7af023f` buttons: picker/regional use the **detail button's exact expand + colours** (`ActionPillButton`,
+  `AppColorScheme` tokens) — replaced the choppy `ExpandableIconButton`/bespoke-colour attempt.
+- `50677ff` picker buttons expand on hover; **no TV exit-dialog on web** (`kIsWeb` gate in `app.dart`).
+- `e3d2fdc` regional indexer-tile buttons expand on hover (first pass).
+- `8c5bdb5` web: fetch picker API **+ posters same-origin** (`coreweb.nginx.conf` `/picker` proxy;
+  `${Uri.base.origin}/picker/api` on web) — fixed thumbnails not loading.
+- `bc2204f` nav: match TV — Seerr→Regional→indexer tiles→catalog; removed the bogus sidebar item.
+- `3cefe93` **Downloads manager** (admin qBit) — net-new port of the TV Downloads view.
+- `8c64b82` detail "Pick Torrent" → **"Download"**, download-arrow icon, gated to downloader role.
+- `665da5a` **1TamilMV catalog** reworked to the TV SeerrIndexerCatalog (two sections, hover backdrop).
+- `b686ae3` **Torrent picker** reworked to the TV SelectTorrentPopup (glass card, streaming, split Sort +
+  Quality chips, remembered filters, loader, per-row Download/Cancel/In-Library/Delete).
+- `df6944f` / `eca294e` docs: provisional-truth rule + platform-branch model.
+
+**Infra (in the parent `moonfin/` repo, not this one):** added the `moonfin-coreweb` nginx container
+(`:8100`, serves `core-client/webroot`, proxies `/picker/` → scraper) in `docker-compose.yml` +
+`coreweb.nginx.conf`.
