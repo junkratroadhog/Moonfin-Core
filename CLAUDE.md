@@ -26,7 +26,9 @@ This app is receiving a feature port from the Enact/React TV app (`moonfin-smart
 good; only then does this Flutter build become the reference. Do not treat `main` as the truth before
 that sign-off — when a screen differs, the TV app wins. The shared backend
 (scraper/picker API on `:5056/picker/api`, `:9898`) is reused unchanged; clients only call it. See the
-parent `MOONFIN_PORT_SPEC.md` for the feature map and current parity status.
+parent `MOONFIN_PORT_SPEC.md` for the feature map, and **`PORTING_NOTES.md`** for the hard-won
+per-screen gotchas (web same-origin fetch, Dio-doesn't-stream-on-web, NavigationLayout, etc.) — read it
+before porting the next screen.
 
 ## UI conventions (do not miss these)
 - **Action buttons** (the circular icon that expands into a labeled pill on hover/focus — Play, Delete,
