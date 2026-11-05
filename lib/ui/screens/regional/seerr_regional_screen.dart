@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../data/services/picker/picker_models.dart';
 import '../../../data/services/picker/picker_service.dart';
 import '../../navigation/destinations.dart';
+import '../../widgets/expandable_icon_button.dart';
 
 // Flutter port of the TV app's views/SeerrRegional — the "Regional" Seerr section. Lists the available
 // indexer catalogs as tiles (1TamilMV), each with Refresh / Soft Sync / Hard Sync buttons plus a header
@@ -129,8 +130,12 @@ class _SeerrRegionalScreenState extends State<SeerrRegionalScreen> {
                       ],
                     ),
                   ),
-                  _pill(cs, anyRunning ? 'Refreshing…' : 'Refresh All',
-                      anyRunning ? null : _refreshAll),
+                  ExpandableIconButton(
+                    icon: Icons.refresh,
+                    label: anyRunning ? 'Refreshing…' : 'Refresh All',
+                    baseColor: cs.primary,
+                    onPressed: _refreshAll,
+                  ),
                 ],
               ),
             ),
@@ -203,13 +208,28 @@ class _SeerrRegionalScreenState extends State<SeerrRegionalScreen> {
           const SizedBox(height: 10),
           Row(
             children: [
-              _pill(cs, ix.running ? 'Refreshing…' : 'Refresh',
-                  ix.running ? null : _refreshTile,
-                  icon: Icons.autorenew),
+              // Circular icon buttons that expand into a labeled pill on hover/focus — the TV app's
+              // ActionButton, reusing the app's native ExpandableIconButton (same as the toolbar/sidebar).
+              ExpandableIconButton(
+                icon: Icons.autorenew,
+                label: ix.running ? 'Refreshing…' : 'Refresh',
+                baseColor: cs.primary,
+                onPressed: _refreshTile,
+              ),
               const SizedBox(width: 8),
-              _pill(cs, 'Soft Sync', () => _softSync(ix.id), icon: Icons.sync),
+              ExpandableIconButton(
+                icon: Icons.sync,
+                label: 'Soft Sync',
+                baseColor: cs.primary,
+                onPressed: () => _softSync(ix.id),
+              ),
               const SizedBox(width: 8),
-              _pill(cs, 'Hard Sync', () => _hardSync(ix.id), icon: Icons.cloud_sync_outlined),
+              ExpandableIconButton(
+                icon: Icons.cloud_sync_outlined,
+                label: 'Hard Sync',
+                baseColor: cs.primary,
+                onPressed: () => _hardSync(ix.id),
+              ),
             ],
           ),
           if (updated.isNotEmpty) ...[
@@ -222,32 +242,4 @@ class _SeerrRegionalScreenState extends State<SeerrRegionalScreen> {
     );
   }
 
-  Widget _pill(ColorScheme cs, String text, VoidCallback? onTap, {IconData? icon}) {
-    final ink = cs.onSurface;
-    return Opacity(
-      opacity: onTap == null ? 0.5 : 1,
-      child: Material(
-        color: ink.withValues(alpha: 0.08),
-        shape: StadiumBorder(side: BorderSide(color: ink.withValues(alpha: 0.12))),
-        child: InkWell(
-          onTap: onTap,
-          customBorder: const StadiumBorder(),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (icon != null) ...[
-                  Icon(icon, size: 14, color: ink),
-                  const SizedBox(width: 5),
-                ],
-                Text(text,
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: ink)),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
