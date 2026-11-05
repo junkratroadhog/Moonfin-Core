@@ -1135,22 +1135,10 @@ class _LeftSidebarState extends State<LeftSidebar> with RouteAware {
                       context.navigateTopLevel(Destinations.seerrDiscover);
                     },
                   ),
-                  _SidebarItem(
-                    key: const ValueKey('sidebar-regional'),
-                    baseColor: nextMainSidebarColor(),
-                    icon: Icons.language,
-                    label: 'Regional (1TamilMV)',
-                    showLabel: _showLabels,
-                    onPressed: () {
-                      _onNavigate();
-                      if (_isActive(Destinations.regionalCatalog)) {
-                        _exitSidebarToContent();
-                        return;
-                      }
-                      _markNavigationAwayFromSidebar();
-                      context.navigateTopLevel(Destinations.regionalCatalog);
-                    },
-                  ),
+                // 1TamilMV / Regional is NOT a sidebar item — it lives under Seerr -> Regional, to match
+                // the TV app. (Downloads/Indexers/Storage ARE admin sidebar items in the TV app.)
+                if (!kidsMode &&
+                    GetIt.instance<PluginSyncService>().seerrAvailable)
                   _SidebarItem(
                     key: const ValueKey('sidebar-qbit-downloads'),
                     baseColor: nextMainSidebarColor(),

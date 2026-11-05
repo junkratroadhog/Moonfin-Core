@@ -112,6 +112,20 @@ class PickerService {
     }
   }
 
+  /// Admin: hard re-scrape every indexer (the Regional screen's "Refresh All").
+  Future<bool> refreshAllIndexers() async {
+    try {
+      final res = await _dio.post(
+        '$baseUrl/indexers/refresh-all',
+        options: Options(headers: _authHeaders),
+      );
+      return res.statusCode == 200 || res.statusCode == 201;
+    } catch (e) {
+      debugPrint('[PickerService] Failed to refresh all indexers: $e');
+      return false;
+    }
+  }
+
   /// Fetches available releases from Radarr & indexers (including 1TamilMV)
   Future<PickerReleasesResponse> fetchReleases({
     required int tmdbId,

@@ -57,6 +57,7 @@ import '../screens/seerr/seerr_discover_screen.dart';
 import '../screens/seerr/seerr_person_screen.dart';
 import '../screens/seerr/seerr_requests_screen.dart';
 import '../screens/regional/regional_catalog_screen.dart';
+import '../screens/regional/seerr_regional_screen.dart';
 import '../screens/admin/downloads/qbit_downloads_screen.dart';
 import '../screens/livetv/live_tv_channel_player_loader.dart';
 import '../screens/livetv/live_tv_guide_screen.dart';
@@ -726,8 +727,15 @@ final appRouter = GoRouter(
 
     // Seerr & Indexer
     GoRoute(
+      path: Destinations.seerrRegional,
+      builder: (context, state) => const SeerrRegionalScreen(),
+    ),
+    GoRoute(
       path: Destinations.regionalCatalog,
-      builder: (context, state) => const RegionalCatalogScreen(),
+      builder: (context, state) => RegionalCatalogScreen(
+        indexerId: state.uri.queryParameters['id'] ?? '1tamilmv',
+        indexerName: state.uri.queryParameters['name'] ?? '1TamilMV',
+      ),
     ),
     GoRoute(
       path: Destinations.qbitDownloads,

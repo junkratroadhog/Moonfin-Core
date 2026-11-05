@@ -75,7 +75,7 @@ enum SeerrShortcut {
     discover => l10n.discover,
     movies => l10n.movies,
     series => l10n.series,
-    regional => '1TamilMV Regional',
+    regional => 'Regional',
     requests => l10n.seerrRequestsTitle,
     issues => l10n.seerrIssuesTitle,
   };
@@ -98,7 +98,7 @@ enum SeerrShortcut {
       case series:
         _openBrowse(context, 'tv');
       case regional:
-        context.push(Destinations.regionalCatalog);
+        context.push(Destinations.seerrRegional);
       case requests:
         context.push(Destinations.seerrRequests);
       case issues:

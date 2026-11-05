@@ -165,6 +165,7 @@ class Destinations {
   static const seerrMediaDetail = '/seerr/media/:itemId';
   static const seerrPersonDetail = '/seerr/person/:personId';
   static const seerrCollectionDetail = '/seerr/collection/:collectionId';
+  static const seerrRegional = '/seerr/regional';
   static const regionalCatalog = '/regional';
   static const qbitDownloads = '/downloads-admin';
 
