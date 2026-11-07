@@ -46,7 +46,11 @@ class _SeerrRegionalScreenState extends State<SeerrRegionalScreen> {
   Future<void> _load() async {
     try {
       final list = await _service.getIndexers();
-      if (mounted) setState(() => _indexers = list);
+      // Never let a transient empty result (e.g. a hiccup mid-poll) blank the tiles once we have them —
+      // there's always at least one indexer, so an empty list from a poll is noise, not a real change.
+      if (mounted && (list.isNotEmpty || _indexers.isEmpty)) {
+        setState(() => _indexers = list);
+      }
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
     }

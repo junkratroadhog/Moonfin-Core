@@ -6,9 +6,11 @@ import '../../preference/user_preferences.dart';
 import '../../util/focus/input_mode_tracker.dart';
 
 /// The detail screen's secondary action button (Play / Delete / etc.), reused verbatim: a circular
-/// icon that smoothly grows into a labeled pill on hover/focus (AnimatedContainer, 150ms easeOut) using
-/// the app's own AppColorScheme tokens — NOT a bespoke colour. Lifted from _DetailActionButton's modern
-/// landscape path so the picker / Regional buttons match the detail buttons exactly.
+/// icon that smoothly grows into a labeled pill on hover/focus (AnimatedContainer, **150ms easeOut** —
+/// the EXACT timing/curve of `_DetailActionButton`) using the app's own AppColorScheme tokens
+/// (`buttonFocused`/`white@0.06` fill, `onButtonFocused`/`onButtonNormal` icon, `focusColor`/`onSurface@0.35`
+/// border) — NOT a bespoke colour. Lifted from `_DetailActionButton`'s modern landscape path so the
+/// picker / Regional buttons are pixel-identical to the detail-screen buttons.
 class ActionPillButton extends StatefulWidget {
   final IconData? icon;
   final Widget Function(double size, Color color)? iconBuilder;
@@ -71,10 +73,9 @@ class _ActionPillButtonState extends State<ActionPillButton> {
         child: GestureDetector(
           onTap: widget.onPressed,
           child: AnimatedContainer(
-            // Matches the TV app's `transition: 0.2s ease` (Flutter Curves.ease == CSS ease) so the
-            // expand/collapse feels as smooth as the TV action buttons.
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.ease,
+            // EXACT match of `_DetailActionButton` (the moonfin default action button): 150ms easeOut.
+            duration: const Duration(milliseconds: 150),
+            curve: Curves.easeOut,
             height: height,
             constraints: BoxConstraints(minWidth: height, maxWidth: maxWidth),
             padding: EdgeInsets.only(left: isExpanded ? 6 : 0, right: isExpanded ? 16 : 0),

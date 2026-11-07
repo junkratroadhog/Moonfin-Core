@@ -62,6 +62,23 @@ don't invent. See also `MOONFIN_PORT_SPEC.md` (feature map) and `CLAUDE.md` (bra
     in tabs — it does NOT hit the scraper/picker. Both sources swallow errors silently (return `[]`), so
     "no results" can hide a real failure. Not a bug in the port.
 
+12. **Picker "already downloaded" = Play/Delete + "In Library" chip** is driven ENTIRELY by
+    `/grab/status` returning `completed` for the row's key (`guid || downloadUrl(=magnet) || title`, which
+    the Flutter model + backend `grabKeyOf` already agree on). The completed-state UI is in
+    `torrent_picker_dialog.dart`. Gotcha: a pick that finished, imported, and had its qBit torrent cleared
+    while no picker was polling it left its registry row stuck at `downloading` → `/grab/status` returned
+    `gone` → BOTH clients showed "Download" for a file that's actually in the library. Fixed in the SHARED
+    backend `scraper-server.js` `/grab/status`: a `downloading` row absent from qBit now consults *arr
+    import history (`downloadFolderImported` by infohash); if imported → `completed` (+ mark the registry).
+    User-removed (`removed`) rows stay `gone`. **Play** only renders when the picker is given an `onPlay`;
+    wiring it needs the app's real playback bring-up (a `PlaybackManager`/queue — `VideoPlayerScreen` takes
+    no item arg), so it's a separate piece (deferred). Delete + In Library need no `onPlay`.
+
+13. **Poster cards reuse the app's own focus treatment on hover** — `AnimatedScale` to
+    `MediaCard.focusScale` + a focus-colour (`UserPreferences.focusColor`) border on the poster, 200ms
+    `Curves.ease`. This mirrors the TV `.itemCard:focus { transform: scale(1.05) }` + `.poster` border AND
+    the Flutter `MediaCard`'s own focus ring. Don't invent a bespoke hover effect — use these tokens.
+
 ## Screens ported (status)
 
 - ✅ Torrent picker (`ui/widgets/picker/torrent_picker_dialog.dart`) + `data/services/picker/*`
@@ -83,6 +100,12 @@ don't invent. See also `MOONFIN_PORT_SPEC.md` (feature map) and `CLAUDE.md` (bra
 
 The gotchas above are the distilled rules; this is the full trail so nothing's lost.
 
+- picker: downloaded-content **Delete + "In Library"** restored — shared backend `/grab/status` now
+  reports `completed` for an imported-but-qBit-cleared pick (consults *arr import history); the picker's
+  completed-state UI was already present. (`scraper-server.js`, parent repo). Play deferred (needs the
+  playback pipeline).
+- catalog: **poster hover highlight** — scale to `MediaCard.focusScale` + focus-colour poster border,
+  200ms `Curves.ease` (reuses the app's own card-focus treatment; matches the TV `.itemCard:focus`).
 - `c13649a` picker: stream the indexer search incrementally **on web** (fetch+getReader); live `N/total`.
 - `6889573` picker: auto-search indexers by **title** when no tmdbId (Download never shows empty).
 - `14df0e7` nav: wrap 1TamilMV / Regional / Downloads screens in `NavigationLayout` (left sidebar stays).

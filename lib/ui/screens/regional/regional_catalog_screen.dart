@@ -2,10 +2,13 @@ import 'dart:async';
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 
 import '../../../data/services/picker/picker_models.dart';
 import '../../../data/services/picker/picker_service.dart';
+import '../../../preference/user_preferences.dart';
 import '../../../util/platform_detection.dart';
+import '../../widgets/media_card.dart';
 import '../../widgets/navigation_layout.dart';
 import '../../widgets/picker/torrent_picker_dialog.dart';
 
@@ -361,8 +364,11 @@ class _RegionalCatalogScreenState extends State<RegionalCatalogScreen> {
 }
 
 // Library-style poster card: poster + gold-4K/silver-1080p quality badge + title + year/languages
-// (ellipsis, like the Movies grid — no marquee). Mirrors TV renderCardBody.
-class _CatalogCard extends StatelessWidget {
+// (ellipsis, like the Movies grid — no marquee). Mirrors TV renderCardBody. On hover it reuses the
+// app's own card focus treatment (same as MediaCard): the whole card scales to MediaCard.focusScale
+// and the poster gains a focus-colour border, both 200ms Curves.ease — matching the TV SeerrBrowse
+// `.itemCard:focus { transform: scale(1.05) }` + `.poster { border-color: focus }`.
+class _CatalogCard extends StatefulWidget {
   final CatalogItem item;
   final String posterUrl;
   final VoidCallback onTap;
@@ -376,81 +382,115 @@ class _CatalogCard extends StatelessWidget {
   });
 
   @override
+  State<_CatalogCard> createState() => _CatalogCardState();
+}
+
+class _CatalogCardState extends State<_CatalogCard> {
+  bool _hovered = false;
+
+  @override
   Widget build(BuildContext context) {
+    final item = widget.item;
+    final posterUrl = widget.posterUrl;
     final ink = Theme.of(context).colorScheme.onSurface;
     final langs = item.languages.isNotEmpty ? item.languages.join(', ') : '';
+    // Same focus colour the rest of the app uses for card/button focus (no bespoke colour).
+    final focusColor = Color(
+      GetIt.instance<UserPreferences>().get(UserPreferences.focusColor).colorValue,
+    );
     return MouseRegion(
-      onEnter: (_) => onHover(),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Container(color: ink.withValues(alpha: 0.05)),
-                    if (posterUrl.isNotEmpty)
-                      Image.network(
-                        posterUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Icon(Icons.movie_outlined,
-                            size: 40, color: ink.withValues(alpha: 0.2)),
-                        loadingBuilder: (c, child, p) => p == null
-                            ? child
-                            : Center(
-                                child: SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: ink.withValues(alpha: 0.2)),
-                                ),
-                              ),
-                      )
-                    else
-                      Icon(Icons.movie_outlined,
-                          size: 40, color: ink.withValues(alpha: 0.2)),
-                    if (item.quality != null && item.quality!.isNotEmpty)
-                      Positioned(
-                        top: 8,
-                        left: 8,
-                        child: _QualityBadge(quality: item.quality!),
-                      ),
-                  ],
+      onEnter: (_) {
+        setState(() => _hovered = true);
+        widget.onHover();
+      },
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedScale(
+          scale: _hovered ? MediaCard.focusScale : 1.0,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.ease,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.ease,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: _hovered ? focusColor : Colors.transparent,
+                      width: 3,
+                    ),
+                  ),
+                  child: ClipRRect(
+                    // Clip inside the 3px border (border-box) so the poster corners stay rounded and
+                    // the hover border never clips the art — mirrors the TV `.poster` border-box rule.
+                    borderRadius: BorderRadius.circular(7),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Container(color: ink.withValues(alpha: 0.05)),
+                        if (posterUrl.isNotEmpty)
+                          Image.network(
+                            posterUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => Icon(Icons.movie_outlined,
+                                size: 40, color: ink.withValues(alpha: 0.2)),
+                            loadingBuilder: (c, child, p) => p == null
+                                ? child
+                                : Center(
+                                    child: SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: ink.withValues(alpha: 0.2)),
+                                    ),
+                                  ),
+                          )
+                        else
+                          Icon(Icons.movie_outlined,
+                              size: 40, color: ink.withValues(alpha: 0.2)),
+                        if (item.quality != null && item.quality!.isNotEmpty)
+                          Positioned(
+                            top: 8,
+                            left: 8,
+                            child: _QualityBadge(quality: item.quality!),
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 6),
-            Text(item.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                    fontSize: 13, fontWeight: FontWeight.w600, color: ink)),
-            const SizedBox(height: 2),
-            Row(
-              children: [
-                if (item.year != null && item.year! > 0) ...[
-                  Text('${item.year}',
-                      style: TextStyle(
-                          fontSize: 11, color: ink.withValues(alpha: 0.5))),
-                  const SizedBox(width: 6),
-                ],
-                if (langs.isNotEmpty)
-                  Expanded(
-                    child: Text(langs,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+              const SizedBox(height: 6),
+              Text(item.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w600, color: ink)),
+              const SizedBox(height: 2),
+              Row(
+                children: [
+                  if (item.year != null && item.year! > 0) ...[
+                    Text('${item.year}',
                         style: TextStyle(
                             fontSize: 11, color: ink.withValues(alpha: 0.5))),
-                  ),
-              ],
-            ),
-          ],
+                    const SizedBox(width: 6),
+                  ],
+                  if (langs.isNotEmpty)
+                    Expanded(
+                      child: Text(langs,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              fontSize: 11, color: ink.withValues(alpha: 0.5))),
+                    ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

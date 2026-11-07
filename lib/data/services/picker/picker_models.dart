@@ -254,6 +254,9 @@ class GrabStatus {
   final String speed;
   final String title;
   final String? hash;
+  // True once the *arr actually imported the file into the library (playable). 'completed' alone only
+  // means the torrent finished in qBit — the Play button waits for this so the player can open the file.
+  final bool imported;
 
   const GrabStatus({
     required this.status,
@@ -263,6 +266,7 @@ class GrabStatus {
     required this.speed,
     required this.title,
     this.hash,
+    this.imported = false,
   });
 
   factory GrabStatus.fromJson(Map<String, dynamic> json) {
@@ -274,6 +278,7 @@ class GrabStatus {
       speed: json['speed'] as String? ?? '',
       title: json['title'] as String? ?? '',
       hash: json['hash'] as String?,
+      imported: json['imported'] as bool? ?? false,
     );
   }
 

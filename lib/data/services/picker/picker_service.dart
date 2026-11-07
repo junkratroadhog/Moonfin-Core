@@ -67,7 +67,11 @@ class PickerService {
   Future<List<IndexerInfo>> getIndexers() async {
     try {
       final res = await _dio.get(
-        '$baseUrl/indexers',
+        // Cache-bust: this endpoint is polled every few seconds. Without a unique URL the browser's HTTP
+        // cache revalidates via the server ETag and returns 304 Not Modified — which Dio's web adapter
+        // surfaces as statusCode 304 with an EMPTY body (it does NOT transparently substitute the cached
+        // body the way fetch() does), so a poll would otherwise read "no indexers". (web porting gotcha)
+        '$baseUrl/indexers?_cb=${DateTime.now().millisecondsSinceEpoch}',
         options: Options(headers: _authHeaders),
       );
       if (res.statusCode == 200 && res.data is Map<String, dynamic>) {
@@ -89,9 +93,10 @@ class PickerService {
     int page = 1,
   }) async {
     try {
+      // Cache-bust (same 304-on-poll web gotcha as getIndexers — the catalog is polled too).
       final query = all ? '?all=1' : '?page=$page';
       final res = await _dio.get(
-        '$baseUrl/indexers/$indexerId/catalog$query',
+        '$baseUrl/indexers/$indexerId/catalog$query&_cb=${DateTime.now().millisecondsSinceEpoch}',
         options: Options(headers: _authHeaders),
       );
       if (res.statusCode == 200 && res.data is Map<String, dynamic>) {
@@ -271,12 +276,24 @@ class PickerService {
     }
   }
 
-  /// Gets download status by hash or keys
-  Future<Map<String, dynamic>> getGrabStatusKeys(List<String> keys) async {
+  /// Gets download status by release keys. Pass [titles] (key → release title) so the backend can also
+  /// recognise a release whose torrent was downloaded+completed outside the picker, or a same-named
+  /// re-upload with a different infohash (matched by name against completed qBit torrents / imports) —
+  /// so every already-downloaded row shows Play/Delete, not just picker-grabbed ones.
+  Future<Map<String, dynamic>> getGrabStatusKeys(
+    List<String> keys, {
+    Map<String, String>? titles,
+  }) async {
     try {
       final res = await _dio.post(
         '$baseUrl/grab/status',
-        data: {'keys': keys},
+        data: {
+          'keys': keys,
+          if (titles != null)
+            'items': [
+              for (final k in keys) {'key': k, 'title': titles[k] ?? ''},
+            ],
+        },
         options: Options(headers: _authHeaders),
       );
       if (res.statusCode == 200 && res.data is Map<String, dynamic>) {

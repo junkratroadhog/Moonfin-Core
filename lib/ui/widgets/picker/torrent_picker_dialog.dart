@@ -3,10 +3,16 @@ import 'dart:ui' show ImageFilter, FontFeature;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
+import 'package:go_router/go_router.dart';
+import 'package:playback_core/playback_core.dart';
+import 'package:server_core/server_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../data/models/aggregated_item.dart';
 import '../../../data/services/picker/picker_models.dart';
 import '../../../data/services/picker/picker_service.dart';
+import '../../navigation/destinations.dart';
 import '../action_pill_button.dart';
 import '../detail_glyph.dart';
 
@@ -61,7 +67,8 @@ class _Dl {
   final String status; // sending | downloading | completed | failed
   final double progress; // 0..1
   final String? hash;
-  const _Dl(this.status, {this.progress = 0, this.hash});
+  final bool imported; // true once the *arr imported it → the row may offer Play (see completed branch)
+  const _Dl(this.status, {this.progress = 0, this.hash, this.imported = false});
 }
 
 // Remembered Sort/Quality across popups (SharedPreferences, mirrors the TV localStorage mfp.* keys).
@@ -79,8 +86,9 @@ void showTorrentPickerDialog(
   String? backdrop,
   String mediaType = 'movie',
   List<TorrentRelease>? presetReleases,
-  // Wire this to enable the completed-row Play button (resolves + plays the library item). When null,
-  // a finished pick shows "In Library" + Delete only — exactly like the TV app with no onPlay wired.
+  // Optional override for the completed-row Play button. When null (the usual case), the picker
+  // resolves the library item by TMDB id/title and plays it itself — so a finished MOVIE pick always
+  // offers Play + Delete. Pass this only if the host wants to handle playback its own way.
   void Function(TorrentRelease release)? onPlay,
 }) {
   showGeneralDialog<void>(
@@ -305,8 +313,11 @@ class _TorrentPickerDialogState extends State<TorrentPickerDialog> {
     if (!mounted || _releases.isEmpty) return;
     final keys = _releases.map(_keyOf).where((k) => k.isNotEmpty).toList();
     if (keys.isEmpty) return;
+    // Send each release's title too, so a downloaded torrent is recognised by name (same-named
+    // re-uploads / grabbed-outside-the-picker) and not just by the exact magnet/infohash we grabbed.
+    final titles = {for (final r in _releases) _keyOf(r): r.title};
     try {
-      final st = await _service.getGrabStatusKeys(keys);
+      final st = await _service.getGrabStatusKeys(keys, titles: titles);
       if (!mounted) return;
       setState(() {
         final next = Map<String, _Dl>.of(_dl);
@@ -318,6 +329,7 @@ class _TorrentPickerDialogState extends State<TorrentPickerDialog> {
               g.status,
               progress: g.progress > 1.0 ? g.progress / 100.0 : g.progress,
               hash: g.hash,
+              imported: g.imported,
             );
           }
         });
@@ -374,6 +386,59 @@ class _TorrentPickerDialogState extends State<TorrentPickerDialog> {
       }
     } catch (_) {
       if (mounted) setState(() => _dl = {..._dl, k: _Dl('completed', hash: hash)});
+    }
+  }
+
+  // Play an already-in-library MOVIE pick, mirroring the TV app's onPlayRow: resolve the Jellyfin item
+  // (by TMDB id, else by title), hand it to the app's player, then close the picker. Uses the same
+  // playback path as the library (PlaybackManager.playItems → push the video player route).
+  Future<void> _playRelease(TorrentRelease rel) async {
+    // If the host wired its own onPlay (e.g. the detail screen has the item in hand), defer to it.
+    if (widget.onPlay != null) {
+      widget.onPlay!(rel);
+      return;
+    }
+    if (!GetIt.instance.isRegistered<MediaServerClient>() ||
+        !GetIt.instance.isRegistered<PlaybackManager>()) {
+      if (mounted) setState(() => _error = 'Playback is unavailable.');
+      return;
+    }
+    final router = GoRouter.of(context); // capture before any pop so navigation survives the close
+    try {
+      final client = GetIt.instance<MediaServerClient>();
+      final resp = await client.itemsApi.getItems(
+        recursive: true,
+        includeItemTypes: const ['Movie'],
+        searchTerm: widget.title.isNotEmpty ? widget.title : rel.title,
+        fields: 'ProviderIds',
+        limit: 50,
+      );
+      final list = (resp['Items'] as List?)?.whereType<Map>().toList() ?? const [];
+      Map? match;
+      if (widget.tmdbId > 0) {
+        for (final it in list) {
+          final tmdb = (it['ProviderIds'] as Map?)?['Tmdb']?.toString();
+          if (tmdb == widget.tmdbId.toString()) {
+            match = it;
+            break;
+          }
+        }
+      }
+      match ??= list.isNotEmpty ? list.first : null;
+      if (match == null) {
+        if (mounted) setState(() => _error = 'Not in your library yet.');
+        return;
+      }
+      final item = AggregatedItem(
+        id: match['Id']?.toString() ?? '',
+        serverId: client.baseUrl,
+        rawData: match.cast<String, dynamic>(),
+      );
+      await GetIt.instance<PlaybackManager>().playItems([item]);
+      if (mounted) Navigator.of(context).maybePop(); // close the picker, then show the player
+      router.push(Destinations.videoPlayer);
+    } catch (e) {
+      if (mounted) setState(() => _error = 'Could not start playback: $e');
     }
   }
 
@@ -666,7 +731,9 @@ class _TorrentPickerDialogState extends State<TorrentPickerDialog> {
         ),
       );
     }
-    final canPlay = widget.onPlay != null && widget.mediaType != 'tv';
+    // Movies can always be played from a finished pick — the picker resolves the library item and plays
+    // it itself (the host doesn't need to wire onPlay). TV packs don't map to one playable item.
+    final canPlay = widget.mediaType != 'tv';
     return ListView.builder(
       padding: EdgeInsets.zero,
       itemCount: vis.length,
@@ -681,7 +748,7 @@ class _TorrentPickerDialogState extends State<TorrentPickerDialog> {
           onGrab: () => _onGrab(r),
           onCancel: () => _onCancel(r),
           onDelete: () => _onDelete(r),
-          onPlay: () => widget.onPlay?.call(r),
+          onPlay: () => _playRelease(r),
         );
       },
     );
@@ -920,10 +987,13 @@ class _TorrentRow extends StatelessWidget {
       );
     }
     if (status == 'completed') {
+      // Play only once the *arr imported the file into the library (dl.imported) — only then can the
+      // player open it. Completed-in-qBit-but-not-yet-imported shows Delete alone.
+      final showPlay = canPlay && (dl?.imported ?? false);
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (canPlay) ...[
+          if (showPlay) ...[
             ActionPillButton(
               iconBuilder: (s, c) => DetailGlyph(DetailIconPaths.play, size: s, color: c),
               label: 'Play',
